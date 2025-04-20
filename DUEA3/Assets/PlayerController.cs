@@ -1,6 +1,6 @@
 using UnityEngine;
 using TMPro;
-using UnityEngine.SceneManagement; // 新增命名空间
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
@@ -11,8 +11,14 @@ public class PlayerController : MonoBehaviour
     [Header("Coin Collection")]
     public int coinsCollected = 0;
     public TMP_Text coinCounterText;
-    public int coinsRequiredToNextLevel = 10; // 需要收集的金币数量
-    public int nextSceneIndex = 1; // 下一个场景的索引（在Build Settings中查看）
+    public int coinsRequiredToNextLevel = 10;
+    public int nextSceneIndex = 1; // 保留场景索引控制
+
+    [Header("UI References")]
+    public GameObject winPanel; // 胜利面板
+
+    [Header("Audio Settings")]
+    public AudioSource coinPickupSound; // 拾取金币音效
 
     private Rigidbody rb;
     private Vector3 movementInput;
@@ -21,6 +27,10 @@ public class PlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         UpdateCoinUI();
+        if (winPanel != null)
+        {
+            winPanel.SetActive(false); // 安全检查
+        }
     }
 
     void Update()
@@ -51,10 +61,15 @@ public class PlayerController : MonoBehaviour
             Destroy(other.gameObject);
             UpdateCoinUI();
 
-            // 检查是否达到目标金币数
+            // 播放拾取金币音效
+            if (coinPickupSound != null)
+            {
+                coinPickupSound.Play();
+            }
+
             if (coinsCollected >= coinsRequiredToNextLevel)
             {
-                LoadNextScene();
+                ShowWinPanel();
             }
         }
     }
@@ -67,11 +82,35 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // 新增方法：加载下一个场景
-    void LoadNextScene()
+    void ShowWinPanel()
     {
-        SceneManager.LoadScene(nextSceneIndex);
-        // 如需过渡效果，可替换为：
-        // SceneManager.LoadSceneAsync(nextSceneIndex);
+        if (winPanel != null)
+        {
+            winPanel.SetActive(true);
+            Time.timeScale = 0f;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true; // 确保鼠标指针可见
+        }
+    }
+
+    // 按钮方法（需绑定到UI按钮）
+    public void OnNextLevelButton()
+    {
+        Time.timeScale = 1f;
+        // 两种场景加载方式共存，优先使用索引
+        if (nextSceneIndex > 0)
+        {
+            SceneManager.LoadScene(nextSceneIndex);
+        }
+        else
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+        }
+    }
+
+    public void OnMenuButton()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("MainMenu");
     }
 }
